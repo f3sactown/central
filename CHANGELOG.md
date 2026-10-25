@@ -6,6 +6,10 @@ version ends in `-alpha.N`. Format: [Keep a Changelog](https://keepachangelog.co
 
 ## [Unreleased]
 
+### Changed
+
+- New blue and grey color scheme, with light and dark modes that follow the device setting.
+
 ## [0.1.0-alpha.1] - 2026-10-25
 
 First alpha release.
