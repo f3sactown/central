@@ -179,11 +179,22 @@ create trigger on_auth_user_created
 -- ---------------------------------------------------------------------------
 
 -- Creates a region with the caller as its admin and an open "General" chat.
+-- Each PAX can create at most one region per 24 hours.
 create function public.create_region(p_name text, p_description text default '')
 returns uuid language plpgsql security definer set search_path = public as $$
 declare rid uuid;
+declare last_created timestamptz;
+declare hours_left int;
 begin
   if auth.uid() is null then raise exception 'Not signed in'; end if;
+  -- Serialize per PAX so two simultaneous requests can't both pass the check.
+  perform pg_advisory_xact_lock(hashtext('create_region:' || auth.uid()::text));
+  select max(created_at) into last_created from regions where created_by = auth.uid();
+  if last_created > now() - interval '24 hours' then
+    hours_left := ceil(extract(epoch from last_created + interval '24 hours' - now()) / 3600)::int;
+    raise exception 'You can create one region per day. Try again in % hour%.',
+      hours_left, case when hours_left = 1 then '' else 's' end;
+  end if;
   insert into regions (name, description, created_by)
   values (p_name, coalesce(p_description, ''), auth.uid())
   returning id into rid;

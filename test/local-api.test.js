@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createLocalApi } from '../src/api/local.js'
 
 function memory() {
@@ -9,6 +9,14 @@ function memory() {
 async function freshApi() {
   return createLocalApi({ storage: memory(), seed: false })
 }
+
+// Each PAX can create one region per day, so move the clock forward between creations.
+function nextDay() {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(Date.now() + 25 * 3600e3)
+}
+
+afterEach(() => vi.useRealTimers())
 
 describe('demo backend', () => {
   it('lets a PAX join a region only through an invite', async () => {
@@ -29,11 +37,33 @@ describe('demo backend', () => {
     expect(regions.map((r) => [r.name, r.role])).toEqual([['Downtown', 'member']])
   })
 
+  it('limits each PAX to creating one region per day', async () => {
+    const api = await freshApi()
+    await api.signUp({ email: 'a@x.com', password: 'pw', name: 'A' })
+    await api.createRegion({ name: 'First' })
+    await expect(api.createRegion({ name: 'Second' })).rejects.toThrow(/one region per day.*24 hours/)
+    await api.signOut()
+
+    await api.signUp({ email: 'b@x.com', password: 'pw', name: 'B' })
+    await expect(api.createRegion({ name: 'Other PAX' })).resolves.toBeTruthy()
+    await api.signOut()
+
+    await api.signIn({ email: 'a@x.com', password: 'pw' })
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(Date.now() + 23 * 3600e3)
+    await expect(api.createRegion({ name: 'Still too soon' })).rejects.toThrow(/in 1 hour\./)
+    vi.setSystemTime(Date.now() + 2 * 3600e3)
+    await expect(api.createRegion({ name: 'Second' })).resolves.toBeTruthy()
+    expect((await api.listMyRegions()).map((r) => r.name)).toEqual(['First', 'Second'])
+  })
+
   it('builds the main feed from every region the PAX belongs to', async () => {
     const api = await freshApi()
     await api.signUp({ email: 'a@x.com', password: 'pw', name: 'A' })
     const r1 = await api.createRegion({ name: 'One' })
+    nextDay()
     const r2 = await api.createRegion({ name: 'Two' })
+    nextDay()
     const r3 = await api.createRegion({ name: 'Not mine' })
     await api.createPost({ regionId: r1, body: 'first' })
     await api.createPost({ regionId: r2, body: 'second' })

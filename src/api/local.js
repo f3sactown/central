@@ -7,6 +7,7 @@ import { FEED_PAGE_SIZE, newId, normalizeUrl } from './shared.js'
 const DB_KEY = 'central-demo-db-v1'
 const SESSION_KEY = 'central-demo-session'
 export const DEMO_INVITE_CODE = 'DEMO'
+const REGION_COOLDOWN_MS = 24 * 3600e3
 
 function memoryStorage() {
   const data = new Map()
@@ -300,6 +301,12 @@ export function createLocalApi({ storage = defaultStorage(), seed = true } = {})
     createRegion: wrap(({ name, description = '' }) => {
       const uid = me().id
       if (!name.trim()) throw new Error('Region name is required')
+      const last = db.regions.filter((r) => r.createdBy === uid).reduce((max, r) => (r.createdAt > max ? r.createdAt : max), '')
+      const waitMs = last ? new Date(last).getTime() + REGION_COOLDOWN_MS - Date.now() : 0
+      if (waitMs > 0) {
+        const hours = Math.ceil(waitMs / 3600e3)
+        throw new Error(`You can create one region per day. Try again in ${hours} hour${hours === 1 ? '' : 's'}.`)
+      }
       const now = new Date().toISOString()
       const region = { id: newId(), name: name.trim(), description, createdBy: uid, createdAt: now }
       db.regions.push(region)

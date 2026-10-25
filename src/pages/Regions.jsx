@@ -82,7 +82,7 @@ export default function Regions() {
               Description
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} maxLength={2000} />
             </label>
-            <p className="muted small">You'll be the region's admin and can invite PAX.</p>
+            <p className="muted small">You'll be the region's admin and can invite PAX. Each PAX can start one region per day.</p>
             <button className="button primary" disabled={busy || !name.trim()}>
               Create region
             </button>
