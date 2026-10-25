@@ -33,8 +33,8 @@ Nothing is shared between people or devices in demo mode.
 2. In the Supabase dashboard open **SQL Editor**, paste the contents of
    [`supabase/schema.sql`](supabase/schema.sql), and click **Run**. This
    creates the tables, the access rules, photo storage and live chat.
-3. In **Authentication > URL Configuration**, set **Site URL** to your Pages
-   address, e.g. `https://f3sactown.github.io/central/`.
+3. In **Authentication > URL Configuration**, set **Site URL** to the site's
+   address, `https://central.f3sactown.com/` (the custom domain in `CNAME`).
 4. In **Project Settings > API**, copy the **Project URL** and the
    **anon public** key.
 5. In this GitHub repo go to **Settings > Secrets and variables > Actions >
