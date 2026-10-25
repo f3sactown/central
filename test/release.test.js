@@ -41,3 +41,13 @@ describe('release rules', () => {
     expect(checkRelease({ version, changelog: repoChangelog })).toEqual([])
   })
 })
+
+describe('supabase settings', async () => {
+  const { normalizeSupabaseUrl } = await import('../src/api/shared.js')
+  it('accepts the project URL in the forms people paste', () => {
+    for (const input of ['https://abc.supabase.co', 'https://abc.supabase.co/', ' https://abc.supabase.co/rest/v1/ ', 'https://abc.supabase.co/rest/v1']) {
+      expect(normalizeSupabaseUrl(input)).toBe('https://abc.supabase.co')
+    }
+    expect(normalizeSupabaseUrl(undefined)).toBe('')
+  })
+})

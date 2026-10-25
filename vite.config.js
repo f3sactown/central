@@ -7,8 +7,20 @@ const { version } = JSON.parse(readFileSync(new URL('./package.json', import.met
 
 // Build details. GitHub Actions sets GITHUB_SHA and GITHUB_RUN_NUMBER;
 // local builds are labelled "local".
+// Which backend the build will use. A half-configured build falls back to
+// the demo, so warn loudly (as a GitHub Actions annotation in CI).
+const supabaseUrl = (process.env.VITE_SUPABASE_URL || '').trim()
+const supabaseKey = (process.env.VITE_SUPABASE_ANON_KEY || '').trim()
+const backend = supabaseUrl && supabaseKey ? 'supabase' : 'demo'
+if (Boolean(supabaseUrl) !== Boolean(supabaseKey)) {
+  const missing = supabaseUrl ? 'SUPABASE_ANON_KEY' : 'SUPABASE_URL'
+  const message = `Supabase is half-configured: ${missing} is empty, so this build runs in demo mode.`
+  console.warn(process.env.GITHUB_ACTIONS ? `::warning title=Supabase settings::${message}` : `\n⚠ ${message}\n`)
+}
+
 const build = {
   version,
+  backend,
   channel: parseVersion(version)?.channel || 'dev',
   number: process.env.GITHUB_RUN_NUMBER || 'local',
   commit: (process.env.GITHUB_SHA || '').slice(0, 7) || 'local',
