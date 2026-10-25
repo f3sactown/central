@@ -69,3 +69,9 @@ Copy `.env.example` to `.env.local` to point a local build at Supabase.
 - `src/pages/`, `src/components/` — the React UI.
 - `supabase/schema.sql` — database tables, row-level security and functions.
 - `.github/workflows/deploy.yml` — builds, tests and publishes to Pages.
+
+## Versions and releases
+
+Central is in **alpha**. The current version is in `package.json` and shown
+in the app with its build number. See [RELEASING.md](RELEASING.md) for how
+releases are published and [CHANGELOG.md](CHANGELOG.md) for what changed.

@@ -1,13 +1,15 @@
 {
   "name": "central",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "release:check": "node scripts/release.mjs check",
+    "release:bump": "npm version prerelease --preid=alpha --no-git-tag-version"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { api } from '../api/index.js'
 import Avatar from '../components/Avatar.jsx'
+import { ChannelBadge, VersionLabel } from '../components/BuildInfo.jsx'
 import { useAuth, useRegions } from '../context/AppContext.jsx'
 
 export default function Layout() {
@@ -37,6 +38,7 @@ export default function Layout() {
       <header className="topbar">
         <Link to="/" className="brand">
           Central
+          <ChannelBadge />
         </Link>
         <nav className="topnav">
           <NavLink to="/" end>
@@ -56,6 +58,9 @@ export default function Layout() {
               <button type="button" onClick={signOut}>
                 Sign out
               </button>
+              <div className="menu-version">
+                <VersionLabel />
+              </div>
             </div>
           )}
         </div>
@@ -77,6 +82,9 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+      <footer className="app-footer">
+        <VersionLabel />
+      </footer>
     </div>
   )
 }

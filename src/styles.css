@@ -1077,3 +1077,28 @@ code {
 .avatar-edit label.button {
   color: var(--text);
 }
+
+/* ---- release channel ---- */
+.channel-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  background: var(--notice);
+  border: 1px solid var(--notice-border);
+  color: var(--text);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+.menu-version {
+  padding: 0.4rem 0.65rem 0.2rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.25rem;
+}
+.app-footer {
+  text-align: center;
+  padding: 1rem;
+}

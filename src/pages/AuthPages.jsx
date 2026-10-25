@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api/index.js'
+import { ChannelBadge, VersionLabel } from '../components/BuildInfo.jsx'
 import ErrorNote from '../components/ErrorNote.jsx'
 import { useAuth } from '../context/AppContext.jsx'
 
@@ -14,9 +15,15 @@ function AuthShell({ title, children }) {
   return (
     <div className="auth-page">
       <div className="card auth-card">
-        <h1 className="brand big">Central</h1>
+        <h1 className="brand big">
+          Central
+          <ChannelBadge />
+        </h1>
         <h2>{title}</h2>
         {children}
+        <p className="center">
+          <VersionLabel />
+        </p>
       </div>
     </div>
   )

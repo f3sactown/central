@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/index.js'
+import { ChannelBadge } from '../components/BuildInfo.jsx'
 import ErrorNote from '../components/ErrorNote.jsx'
 import { useAuth, useRegions } from '../context/AppContext.jsx'
 
@@ -39,7 +40,10 @@ export default function Join() {
   return (
     <div className="auth-page">
       <div className="card auth-card">
-        <h1 className="brand big">Central</h1>
+        <h1 className="brand big">
+          Central
+          <ChannelBadge />
+        </h1>
         {invite === undefined && <p className="muted">Checking invite…</p>}
         {invite === null && !error && <p>This invite link isn't valid.</p>}
         {invite && (
