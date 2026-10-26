@@ -73,5 +73,6 @@ Copy `.env.example` to `.env.local` to point a local build at Supabase.
 ## Versions and releases
 
 Central is in **alpha**. The current version is in `package.json` and shown
-in the app with its build number. See [RELEASING.md](RELEASING.md) for how
+in the app with its build number. Every merge to `main` is a new build with
+its own pre-release. See [RELEASING.md](RELEASING.md) for how
 releases are published and [CHANGELOG.md](CHANGELOG.md) for what changed.
