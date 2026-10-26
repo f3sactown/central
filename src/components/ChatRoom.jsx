@@ -4,6 +4,7 @@ import { api } from '../api/index.js'
 import { useAuth } from '../context/AppContext.jsx'
 import { formatDate, formatTime, sameDay } from '../lib/dates.js'
 import Avatar from './Avatar.jsx'
+import Icon from './Icon.jsx'
 import ErrorNote from './ErrorNote.jsx'
 import MemberPicker from './MemberPicker.jsx'
 
@@ -11,7 +12,7 @@ function addUnique(list, msg) {
   return list.some((m) => m.id === msg.id) ? list : [...list, msg]
 }
 
-export default function ChatRoom({ chatId, regionId, onLeft }) {
+export default function ChatRoom({ chatId, onLeft }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [chat, setChat] = useState(null)
@@ -67,7 +68,7 @@ export default function ChatRoom({ chatId, regionId, onLeft }) {
 
   async function openInvite() {
     try {
-      const all = await api.listMembers(regionId)
+      const all = await api.listMembers(chat.regionId)
       const inChat = new Set(chatMembers.map((m) => m.id))
       setInviteList(all.map((m) => m.profile).filter((p) => !inChat.has(p.id)))
       setSelected(new Set())
@@ -91,24 +92,30 @@ export default function ChatRoom({ chatId, regionId, onLeft }) {
     try {
       await api.leaveChat(chatId)
       await onLeft()
-      navigate(`/r/${regionId}/chats`)
+      navigate('/chats')
     } catch (err) {
       setError(err)
     }
   }
 
-  if (error && !chat) return <div className="card chat-room"><ErrorNote error={error} /></div>
-  if (!chat) return <div className="card chat-room"><p className="muted">Loading chat…</p></div>
+  if (error && !chat) return <div className="chat-room"><ErrorNote error={error} /></div>
+  if (!chat) return <div className="chat-room"><p className="muted">Loading chat…</p></div>
 
   return (
-    <div className="card chat-room">
+    <div className="chat-room">
       <header className="chat-head">
-        <h3>
-          <span aria-hidden="true">{chat.isPrivate ? '🔒 ' : '# '}</span>
-          {chat.name}
-        </h3>
-        <button type="button" className="link-button" onClick={() => setShowMembers((v) => !v)} aria-expanded={showMembers}>
-          👥 {chatMembers.length}
+        <Link to="/chats" className="icon-button chat-back" aria-label="All chats">
+          <Icon name="back" />
+        </Link>
+        <span className="chat-kind">
+          <Icon name={chat.isPrivate ? 'lock' : 'hash'} size={18} label={chat.isPrivate ? 'Private chat' : 'Open chat'} />
+        </span>
+        <div className="chat-title">
+          <h2>{chat.name}</h2>
+          {chat.region && <div className="muted small">{chat.region.name}</div>}
+        </div>
+        <button type="button" className="chip" onClick={() => setShowMembers((v) => !v)} aria-expanded={showMembers} aria-label={`${chatMembers.length} members`}>
+          <Icon name="regions" size={16} /> {chatMembers.length}
         </button>
       </header>
 

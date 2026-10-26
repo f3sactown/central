@@ -7,6 +7,8 @@ import { FEED_PAGE_SIZE, newId, normalizeUrl } from './shared.js'
 
 const PROFILE_COLS = 'id, name, bio, avatar_url'
 const EVENT_COLS = 'id, region_id, title, description, location, starts_at, ends_at, all_day, created_by'
+const EVENT_SELECT = `${EVENT_COLS}, region:regions(id, name)`
+const CHAT_SELECT = 'id, region_id, name, is_private, created_by, created_at, region:regions(id, name)'
 const POST_SELECT = `id, region_id, body, link_url, image_urls, is_notice, created_at,
   author:profiles(${PROFILE_COLS}),
   region:regions(id, name),
@@ -17,7 +19,7 @@ const POST_SELECT = `id, region_id, body, link_url, image_urls, is_notice, creat
 const profileOut = (p) => (p ? { id: p.id, name: p.name, bio: p.bio, avatarUrl: p.avatar_url } : null)
 
 const eventOut = (e) =>
-  e ? { id: e.id, regionId: e.region_id, title: e.title, description: e.description, location: e.location, startsAt: e.starts_at, endsAt: e.ends_at, allDay: e.all_day, createdBy: e.created_by } : null
+  e ? { id: e.id, regionId: e.region_id, region: e.region || null, title: e.title, description: e.description, location: e.location, startsAt: e.starts_at, endsAt: e.ends_at, allDay: e.all_day, createdBy: e.created_by } : null
 
 const postOut = (p) => ({
   id: p.id,
@@ -34,7 +36,7 @@ const postOut = (p) => ({
   commentCount: p.comments?.[0]?.count ?? 0,
 })
 
-const chatOut = (c) => ({ id: c.id, regionId: c.region_id, name: c.name, isPrivate: c.is_private, createdBy: c.created_by, createdAt: c.created_at })
+const chatOut = (c) => ({ id: c.id, regionId: c.region_id, region: c.region || null, name: c.name, isPrivate: c.is_private, createdBy: c.created_by, createdAt: c.created_at })
 const messageOut = (m) => ({ id: m.id, chatId: m.chat_id, author: profileOut(m.author), body: m.body, createdAt: m.created_at })
 const commentOut = (c) => ({ id: c.id, postId: c.post_id, author: profileOut(c.author), body: c.body, createdAt: c.created_at })
 
@@ -229,18 +231,17 @@ export function createSupabaseApi(url, anonKey) {
     },
 
     // --- events -----------------------------------------------------------
+    // Without a regionId, returns events from every region I belong to (RLS).
     async listEvents({ regionId, from, to }) {
       // Events overlapping [from, to): starts before `to` and ends (or starts) after `from`.
-      const rows = unwrap(
-        await sb
-          .from('events')
-          .select(EVENT_COLS)
-          .eq('region_id', regionId)
-          .lt('starts_at', to)
-          .or(`ends_at.gte.${from},and(ends_at.is.null,starts_at.gte.${from})`)
-          .order('starts_at'),
-      )
-      return rows.map(eventOut)
+      let q = sb
+        .from('events')
+        .select(EVENT_SELECT)
+        .lt('starts_at', to)
+        .or(`ends_at.gte.${from},and(ends_at.is.null,starts_at.gte.${from})`)
+        .order('starts_at')
+      if (regionId) q = q.eq('region_id', regionId)
+      return unwrap(await q).map(eventOut)
     },
     async createEvent({ regionId, title, description = '', location = '', startsAt, endsAt = null, allDay = false }) {
       const created_by = await uid()
@@ -248,7 +249,7 @@ export function createSupabaseApi(url, anonKey) {
         await sb
           .from('events')
           .insert({ region_id: regionId, created_by, title: title.trim(), description, location, starts_at: startsAt, ends_at: endsAt, all_day: allDay })
-          .select(EVENT_COLS)
+          .select(EVENT_SELECT)
           .single(),
       )
       return eventOut(row)
@@ -258,12 +259,14 @@ export function createSupabaseApi(url, anonKey) {
     },
 
     // --- chats ------------------------------------------------------------
+    // Without a regionId, returns chats from every region I belong to (RLS).
     async listChats(regionId) {
-      const rows = unwrap(await sb.from('chats').select('*').eq('region_id', regionId).order('created_at'))
-      return rows.map(chatOut)
+      let q = sb.from('chats').select(CHAT_SELECT).order('created_at')
+      if (regionId) q = q.eq('region_id', regionId)
+      return unwrap(await q).map(chatOut)
     },
     async getChat(chatId) {
-      const row = unwrap(await sb.from('chats').select('*').eq('id', chatId).maybeSingle())
+      const row = unwrap(await sb.from('chats').select(CHAT_SELECT).eq('id', chatId).maybeSingle())
       if (!row) throw new Error('Chat not found')
       return chatOut(row)
     },

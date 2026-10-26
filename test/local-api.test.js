@@ -149,6 +149,26 @@ describe('demo backend', () => {
     expect(got).toEqual(['hello'])
   })
 
+  it('combines events and chats from all my regions when no region is given', async () => {
+    const api = await freshApi()
+    await api.signUp({ email: 'a@x.com', password: 'pw', name: 'A' })
+    const r1 = await api.createRegion({ name: 'One' })
+    nextDay()
+    const r2 = await api.createRegion({ name: 'Two' })
+    nextDay()
+    const other = await api.createRegion({ name: 'Left' })
+    const at = new Date(2026, 4, 10, 6).toISOString()
+    for (const regionId of [r1, r2, other]) await api.createEvent({ regionId, title: 'E', startsAt: at })
+    await api.removeMember(other, (await api.getCurrentUser()).id)
+
+    const range = { from: new Date(2026, 4, 1).toISOString(), to: new Date(2026, 5, 1).toISOString() }
+    const events = await api.listEvents(range)
+    expect(events.map((e) => e.region.name).sort()).toEqual(['One', 'Two'])
+    expect((await api.listEvents({ ...range, regionId: r1 })).map((e) => e.region.name)).toEqual(['One'])
+    expect((await api.listChats()).map((c) => c.region.name).sort()).toEqual(['One', 'Two'])
+    await expect(api.listChats(other)).rejects.toThrow(/member/)
+  })
+
   it('returns events overlapping the requested range, several per day', async () => {
     const api = await freshApi()
     await api.signUp({ email: 'a@x.com', password: 'pw', name: 'A' })

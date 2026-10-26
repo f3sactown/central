@@ -60,7 +60,7 @@ export default function PostCard({ post, showRegion = true, onChange, onDelete }
   }
 
   return (
-    <article className={'card post' + (post.isNotice ? ' notice' : '')}>
+    <article className={'post' + (post.isNotice ? ' notice' : '')}>
       <header className="post-head">
         <Avatar profile={post.author} />
         <div className="post-meta">

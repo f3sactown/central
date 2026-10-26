@@ -171,7 +171,12 @@ export function createLocalApi({ storage = defaultStorage(), seed = true } = {})
     return chat
   }
 
-  const eventOut = (e) => (e ? { id: e.id, regionId: e.regionId, title: e.title, description: e.description, location: e.location, startsAt: e.startsAt, endsAt: e.endsAt, allDay: e.allDay, createdBy: e.createdBy } : null)
+  const regionRef = (id) => {
+    const r = db.regions.find((x) => x.id === id)
+    return r ? { id: r.id, name: r.name } : null
+  }
+
+  const eventOut = (e) => (e ? { id: e.id, regionId: e.regionId, region: regionRef(e.regionId), title: e.title, description: e.description, location: e.location, startsAt: e.startsAt, endsAt: e.endsAt, allDay: e.allDay, createdBy: e.createdBy } : null)
 
   function postOut(p) {
     const region = db.regions.find((r) => r.id === p.regionId)
@@ -192,7 +197,17 @@ export function createLocalApi({ storage = defaultStorage(), seed = true } = {})
   }
 
   const messageOut = (m) => ({ id: m.id, chatId: m.chatId, author: profile(userById(m.authorId)), body: m.body, createdAt: m.createdAt })
-  const chatOut = (c) => ({ id: c.id, regionId: c.regionId, name: c.name, isPrivate: c.isPrivate, createdBy: c.createdBy, createdAt: c.createdAt })
+  const chatOut = (c) => ({ id: c.id, regionId: c.regionId, region: regionRef(c.regionId), name: c.name, isPrivate: c.isPrivate, createdBy: c.createdBy, createdAt: c.createdAt })
+
+  // Regions to read from: one region (which must be mine) or all of mine.
+  function regionScope(regionId) {
+    if (regionId) {
+      requireMember(regionId)
+      return new Set([regionId])
+    }
+    const uid = me().id
+    return new Set(db.members.filter((m) => m.userId === uid).map((m) => m.regionId))
+  }
 
   function emitAuth() {
     const id = sessionUserId()
@@ -441,10 +456,11 @@ export function createLocalApi({ storage = defaultStorage(), seed = true } = {})
     }),
 
     // --- events -----------------------------------------------------------
+    // Without a regionId, returns events from every region I belong to.
     listEvents: wrap(({ regionId, from, to }) => {
-      requireMember(regionId)
+      const scope = regionScope(regionId)
       return db.events
-        .filter((e) => e.regionId === regionId)
+        .filter((e) => scope.has(e.regionId))
         .filter((e) => (e.endsAt || e.startsAt) >= from && e.startsAt < to)
         .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
         .map(eventOut)
@@ -467,10 +483,11 @@ export function createLocalApi({ storage = defaultStorage(), seed = true } = {})
     }),
 
     // --- chats ------------------------------------------------------------
+    // Without a regionId, returns chats from every region I belong to.
     listChats: wrap((regionId) => {
-      requireMember(regionId)
+      const scope = regionScope(regionId)
       return db.chats
-        .filter((c) => c.regionId === regionId && canAccessChat(c))
+        .filter((c) => scope.has(c.regionId) && canAccessChat(c))
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
         .map(chatOut)
     }),

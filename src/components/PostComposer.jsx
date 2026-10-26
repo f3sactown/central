@@ -71,7 +71,7 @@ export default function PostComposer({ regions, onPosted }) {
   if (!regions.length) return null
 
   return (
-    <form className="card composer" onSubmit={submit}>
+    <form className="composer" onSubmit={submit}>
       <div className="composer-top">
         <Avatar profile={user} />
         <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Share something with your region…" rows={3} maxLength={10000} aria-label="Post text" />
