@@ -1,26 +1,28 @@
-import { useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api/index.js'
-import Avatar from '../components/Avatar.jsx'
-import { ChannelBadge, VersionLabel } from '../components/BuildInfo.jsx'
-import { useAuth, useRegions } from '../context/AppContext.jsx'
+import { ChannelBadge } from '../components/BuildInfo.jsx'
+import Icon from '../components/Icon.jsx'
+import { regionQuery } from '../lib/regionFilter.js'
 
+const TABS = [
+  { to: '/', icon: 'home', label: 'Home', end: true, keepRegion: true },
+  { to: '/calendar', icon: 'calendar', label: 'Calendar', keepRegion: true },
+  { to: '/chats', icon: 'chat', label: 'Chats', keepRegion: true },
+  { to: '/regions', icon: 'regions', label: 'Regions' },
+  { to: '/me', icon: 'me', label: 'Me' },
+]
+
+// App shell: a bottom tab bar on phones, a slim left column on wider screens.
 export default function Layout() {
-  const { user } = useAuth()
-  const { regions } = useRegions()
   const navigate = useNavigate()
-  const [menuOpen, setMenuOpen] = useState(false)
-
-  async function signOut() {
-    await api.signOut()
-    navigate('/login')
-  }
+  const [params] = useSearchParams()
+  const query = regionQuery(params.get('region'))
 
   return (
-    <div className="app">
+    <div className={'app' + (api.mode === 'demo' ? ' demo' : '')}>
       {api.mode === 'demo' && (
         <div className="demo-banner">
-          Demo mode — data is stored only in this browser.{' '}
+          Demo mode: data is stored only in this browser.{' '}
           <button
             type="button"
             className="link-button"
@@ -35,56 +37,21 @@ export default function Layout() {
           </button>
         </div>
       )}
-      <header className="topbar">
-        <Link to="/" className="brand">
+      <nav className="tabbar" aria-label="Main">
+        <div className="tabbar-brand">
           Central
           <ChannelBadge />
-        </Link>
-        <nav className="topnav">
-          <NavLink to="/" end>
-            Feed
-          </NavLink>
-          <NavLink to="/regions">Regions</NavLink>
-        </nav>
-        <div className="menu-wrap">
-          <button type="button" className="avatar-button" onClick={() => setMenuOpen((v) => !v)} aria-expanded={menuOpen} aria-label="Account menu">
-            <Avatar profile={user} size={34} />
-          </button>
-          {menuOpen && (
-            <div className="menu" onClick={() => setMenuOpen(false)}>
-              <div className="menu-name">{user.name}</div>
-              <Link to={`/pax/${user.id}`}>My profile</Link>
-              <Link to="/settings">Edit profile</Link>
-              <button type="button" onClick={signOut}>
-                Sign out
-              </button>
-              <div className="menu-version">
-                <VersionLabel />
-              </div>
-            </div>
-          )}
         </div>
-      </header>
-      <div className="shell">
-        <aside className="sidebar">
-          <h4>My regions</h4>
-          {regions?.map((r) => (
-            <NavLink key={r.id} to={`/r/${r.id}`} className="side-link">
-              {r.name}
-            </NavLink>
-          ))}
-          {regions?.length === 0 && <p className="muted small">You haven't joined a region yet.</p>}
-          <Link to="/regions" className="side-link muted">
-            + Join or create
-          </Link>
-        </aside>
-        <main className="main">
-          <Outlet />
-        </main>
-      </div>
-      <footer className="app-footer">
-        <VersionLabel />
-      </footer>
+        {TABS.map((t) => (
+          <NavLink key={t.to} to={t.to + (t.keepRegion ? query : '')} end={t.end} className="tab">
+            <Icon name={t.icon} />
+            <span>{t.label}</span>
+          </NavLink>
+        ))}
+      </nav>
+      <main className="screen">
+        <Outlet />
+      </main>
     </div>
   )
 }

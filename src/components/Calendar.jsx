@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api/index.js'
-import { useAuth } from '../context/AppContext.jsx'
+import { useAuth, useRegions } from '../context/AppContext.jsx'
 import { addDays, eventsForDay, formatEventWhen, monthGrid, sameDay, startOfDay } from '../lib/dates.js'
 import ErrorNote from './ErrorNote.jsx'
 import EventFields, { draftToEvent, emptyEventDraft } from './EventFields.jsx'
@@ -8,8 +8,11 @@ import EventFields, { draftToEvent, emptyEventDraft } from './EventFields.jsx'
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MAX_CHIPS = 3
 
-export default function Calendar({ regionId, isAdmin, initialDay }) {
+// Month calendar for one region, or for all my regions when regionId is empty.
+export default function Calendar({ regionId, initialDay }) {
   const { user } = useAuth()
+  const { regions, roleFor } = useRegions()
+  const [eventRegion, setEventRegion] = useState('')
   const [selected, setSelected] = useState(() => startOfDay(initialDay || new Date()))
   const [month, setMonth] = useState(() => ({ y: selected.getFullYear(), m: selected.getMonth() }))
   const [events, setEvents] = useState([])
@@ -25,7 +28,7 @@ export default function Calendar({ regionId, isAdmin, initialDay }) {
     let active = true
     setError(null)
     api
-      .listEvents({ regionId, from: days[0].toISOString(), to: addDays(days[days.length - 1], 1).toISOString() })
+      .listEvents({ regionId: regionId || undefined, from: days[0].toISOString(), to: addDays(days[days.length - 1], 1).toISOString() })
       .then((list) => active && setEvents(list), (err) => active && setError(err))
     return () => {
       active = false
@@ -53,8 +56,9 @@ export default function Calendar({ regionId, isAdmin, initialDay }) {
     setBusy(true)
     setError(null)
     try {
-      const event = await api.createEvent({ regionId, ...draftToEvent(draft) })
-      if (shareToFeed) await api.createPost({ regionId, body: '', eventId: event.id })
+      const target = regionId || eventRegion || regions?.[0]?.id
+      const event = await api.createEvent({ regionId: target, ...draftToEvent(draft) })
+      if (shareToFeed) await api.createPost({ regionId: target, body: '', eventId: event.id })
       setEvents((prev) => [...prev, event].sort((a, b) => a.startsAt.localeCompare(b.startsAt)))
       setDraft(null)
     } catch (err) {
@@ -79,7 +83,7 @@ export default function Calendar({ regionId, isAdmin, initialDay }) {
 
   return (
     <div className="calendar-wrap">
-      <div className="card calendar">
+      <div className="panel calendar">
         <div className="calendar-head">
           <button type="button" className="button" onClick={() => shiftMonth(-1)} aria-label="Previous month">
             ‹
@@ -127,7 +131,7 @@ export default function Calendar({ regionId, isAdmin, initialDay }) {
         </div>
       </div>
 
-      <div className="card day-panel">
+      <div className="panel day-panel">
         <div className="day-panel-head">
           <h3>{selected.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
           {!draft && (
@@ -143,8 +147,9 @@ export default function Calendar({ regionId, isAdmin, initialDay }) {
               <div className="event-title">{e.title}</div>
               <div className="muted small">{formatEventWhen(e)}</div>
               {e.location && <div className="muted small">📍 {e.location}</div>}
+              {!regionId && e.region && <div className="muted small">{e.region.name}</div>}
               {e.description && <p className="rich-text small">{e.description}</p>}
-              {(e.createdBy === user.id || isAdmin) && (
+              {(e.createdBy === user.id || roleFor(e.regionId) === 'admin') && (
                 <button type="button" className="link-button small danger" onClick={() => remove(e)}>
                   Delete
                 </button>
@@ -154,9 +159,21 @@ export default function Calendar({ regionId, isAdmin, initialDay }) {
         </ul>
         {draft && (
           <form onSubmit={save}>
+            {!regionId && regions?.length > 1 && (
+              <label className="block">
+                Region
+                <select value={eventRegion || regions[0].id} onChange={(e) => setEventRegion(e.target.value)}>
+                  {regions.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <EventFields draft={draft} onChange={setDraft} />
             <label className="inline">
-              <input type="checkbox" checked={shareToFeed} onChange={(e) => setShareToFeed(e.target.checked)} /> Also post to the region feed
+              <input type="checkbox" checked={shareToFeed} onChange={(e) => setShareToFeed(e.target.checked)} /> Also post to the feed
             </label>
             <div className="row end">
               <button type="button" className="button" onClick={() => setDraft(null)}>

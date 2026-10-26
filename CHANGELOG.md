@@ -6,8 +6,17 @@ version ends in `-alpha.N`. Format: [Keep a Changelog](https://keepachangelog.co
 
 ## [Unreleased]
 
+## [0.1.0-alpha.2] - 2026-10-26
+
+A redesign that works like a phone app.
+
 ### Changed
 
+- New navigation: a tab bar along the bottom (Home, Calendar, Chats, Regions, Me), which becomes a side column on larger screens.
+- A region filter at the top of Home, Calendar and Chats. Calendar and Chats now cover all your regions at once.
+- Posts show as a flat list, and new posts open from a floating + button.
+- Each region has an overview page with shortcuts, notices, invites, members and settings.
+- Your profile, sign-out and the app version are together on the Me tab.
 - New blue and grey color scheme, with light and dark modes that follow the device setting.
 - The Supabase project URL is accepted with or without a trailing `/rest/v1/`, and the key can be stored as a repository secret or variable.
 - `version.json` reports whether the site runs on Supabase or in demo mode.

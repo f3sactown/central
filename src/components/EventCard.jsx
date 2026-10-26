@@ -18,7 +18,7 @@ export default function EventCard({ event, linkToCalendar = true }) {
   )
   if (!linkToCalendar) return <div className="event-card">{content}</div>
   return (
-    <Link className="event-card" to={`/r/${event.regionId}/calendar?day=${event.startsAt}`}>
+    <Link className="event-card" to={`/calendar?region=${event.regionId}&day=${encodeURIComponent(event.startsAt)}`}>
       {content}
     </Link>
   )

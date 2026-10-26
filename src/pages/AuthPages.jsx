@@ -104,7 +104,7 @@ export function Signup() {
     try {
       const { needsConfirmation } = await api.signUp({ email, password, name })
       if (needsConfirmation) setCheckEmail(true)
-      else navigate(next === '/' ? '/settings?welcome=1' : next, { replace: true })
+      else navigate(next === '/' ? '/me?welcome=1' : next, { replace: true })
     } catch (err) {
       setError(err)
     } finally {
