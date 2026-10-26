@@ -1,8 +1,12 @@
 // Release helpers, used by CI and runnable locally:
 //   node scripts/release.mjs check   validate the version and its changelog entry
 //   node scripts/release.mjs notes   print the changelog entry for this version
-//   node scripts/release.mjs info    print version, tag and prerelease flag
+//   node scripts/release.mjs info    print version, build number, tag and prerelease flag
+//
+// Every merge to main is a new build: the build number is the count of
+// commits on main's first-parent line, so it goes up by one per merge.
 
+import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -29,6 +33,24 @@ export function changelogSection(changelog, version) {
   return lines.slice(start + 1, end).join('\n').trim()
 }
 
+// Number of commits on the first-parent line of HEAD (one per merge to main).
+// Returns null outside a git checkout or in a shallow clone, where the count
+// would be wrong. CI checks out full history for this.
+export function buildNumber(cwd) {
+  try {
+    const run = (cmd) => execSync(cmd, { cwd, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+    if (run('git rev-parse --is-shallow-repository') === 'true') return null
+    return Number(run('git rev-list --count --first-parent HEAD'))
+  } catch {
+    return null
+  }
+}
+
+// Tag for a build, e.g. v0.1.0-alpha.1+build.6 (semver build metadata).
+export function releaseTag(version, build) {
+  return `v${version}+build.${build}`
+}
+
 export function checkRelease({ version, changelog, channel = RELEASE_CHANNEL }) {
   const errors = []
   const parsed = parseVersion(version)
@@ -52,7 +74,12 @@ function main() {
     console.log(changelogSection(changelog, version) || '')
   } else if (cmd === 'info') {
     const parsed = parseVersion(version)
-    console.log(`version=${version}\ntag=v${version}\nprerelease=${parsed?.prerelease ? 'true' : 'false'}`)
+    const build = buildNumber(root)
+    if (build === null) {
+      console.error('Cannot count builds: not a git checkout, or a shallow clone (use fetch-depth: 0).')
+      process.exit(1)
+    }
+    console.log(`version=${version}\nbuild=${build}\ntag=${releaseTag(version, build)}\nprerelease=${parsed?.prerelease ? 'true' : 'false'}`)
   } else {
     console.error('usage: node scripts/release.mjs check|notes|info')
     process.exit(2)

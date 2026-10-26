@@ -4,32 +4,40 @@ Central is in **alpha**. Every version is a prerelease such as
 `0.1.0-alpha.1`. CI refuses any other version until the phase changes
 (`RELEASE_CHANNEL` in `scripts/release.mjs`).
 
-## What runs automatically
+## Builds and releases: every merge
 
-- **Every push to `main`** deploys the site to GitHub Pages. The app shows an
-  ALPHA badge, and the version and build number appear in the account menu
-  and page footer (e.g. `v0.1.0-alpha.1 · build 14 (a1b2c3d)`). The same
-  details are published at `version.json` on the site.
-- **When `main` has a version that hasn't been released yet**, the
-  *Release* workflow tags it (`v0.1.0-alpha.1`), creates a GitHub Release
-  marked **pre-release** with that version's CHANGELOG entry as the notes,
-  and attaches the built site as a zip.
-- **Every pull request** checks that the version is a valid alpha version
-  and that `CHANGELOG.md` has an entry for it.
+Each merge to `main` is a new **build**, and the build number goes up by one.
+It counts the commits on `main`'s first-parent line, so it doesn't matter how
+many commits a pull request had.
 
-## Cutting a new alpha
+Every merge automatically:
 
-In the pull request that should become the next release:
+- **deploys the site** to GitHub Pages. The app shows an ALPHA badge, and the
+  account menu and footer show the version and build, e.g.
+  `v0.1.0-alpha.1 · build 6 (a1b2c3d)`. `version.json` on the site has the
+  same details.
+- **publishes a GitHub pre-release** tagged `v<version>+build.<n>`, e.g.
+  `v0.1.0-alpha.1+build.6`. Its notes list the pull requests merged since the
+  previous build. The first build of a new version also includes that
+  version's CHANGELOG entry. The built site is attached as a zip.
+
+Every pull request is checked for a valid alpha version with a CHANGELOG
+entry, and its build shows the build number it will get once merged.
+
+## Changing the version
+
+The version only changes when a pull request bumps it, and the owner decides
+when. Small fixes keep the current version and simply get a new build. For
+bigger changes, ask the owner whether to bump the version.
+
+To bump it, in the pull request:
 
 1. Run `npm run release:bump`. It moves `0.1.0-alpha.1` to `0.1.0-alpha.2`,
    updating `package.json` and `package-lock.json`.
 2. In `CHANGELOG.md`, rename `## [Unreleased]` to the new version and date,
    e.g. `## [0.1.0-alpha.2] - 2026-11-02`, and add a fresh empty
    `## [Unreleased]` above it.
-3. Merge the pull request. The release is published automatically.
-
-Changes merged without a version bump are deployed to the site but are not
-released. They collect under `[Unreleased]` until the next bump.
+3. Merge. The next build is released under the new version.
 
 ## Leaving alpha
 

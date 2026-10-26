@@ -51,3 +51,33 @@ describe('supabase settings', async () => {
     expect(normalizeSupabaseUrl(undefined)).toBe('')
   })
 })
+
+describe('build numbers', async () => {
+  const { execSync } = await import('node:child_process')
+  const { mkdtempSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const { buildNumber, releaseTag } = await import('../scripts/release.mjs')
+
+  it('goes up by one for each merge to main, however many commits it brings', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'central-build-'))
+    const git = (cmd) => execSync(`git -c user.name=t -c user.email=t@t -c init.defaultBranch=main ${cmd}`, { cwd: dir, stdio: 'ignore' })
+    git('init')
+    git('commit --allow-empty -m initial')
+    expect(buildNumber(dir)).toBe(1)
+    git('checkout -b feature')
+    git('commit --allow-empty -m one')
+    git('commit --allow-empty -m two')
+    git('checkout main')
+    git('merge --no-ff feature -m "Merge feature"')
+    expect(buildNumber(dir)).toBe(2)
+  })
+
+  it('returns null outside a git checkout', () => {
+    expect(buildNumber(tmpdir())).toBeNull()
+  })
+
+  it('tags each build with semver build metadata', () => {
+    expect(releaseTag('0.1.0-alpha.1', 6)).toBe('v0.1.0-alpha.1+build.6')
+  })
+})
