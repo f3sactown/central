@@ -42,3 +42,12 @@ export function summarizeReactions(reactions, userId) {
   }
   return [...byEmoji.values()].sort((a, b) => order(a.emoji) - order(b.emoji))
 }
+
+// Accepts the project URL as copied from the Supabase dashboard, including
+// variants with a trailing slash or the REST path (".../rest/v1/").
+export function normalizeSupabaseUrl(url) {
+  return (url || '')
+    .trim()
+    .replace(/\/+$/, '')
+    .replace(/\/rest\/v1$/i, '')
+}

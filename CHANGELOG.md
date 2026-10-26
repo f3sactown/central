@@ -9,6 +9,8 @@ version ends in `-alpha.N`. Format: [Keep a Changelog](https://keepachangelog.co
 ### Changed
 
 - New blue and grey color scheme, with light and dark modes that follow the device setting.
+- The Supabase project URL is accepted with or without a trailing `/rest/v1/`, and the key can be stored as a repository secret or variable.
+- `version.json` reports whether the site runs on Supabase or in demo mode.
 
 ## [0.1.0-alpha.1] - 2026-10-25
 
